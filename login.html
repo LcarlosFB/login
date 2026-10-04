@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Iniciar sesión</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <main class="card">
+    <h1>Iniciar sesión</h1>
+    <p class="sub">Ingresa con tu correo y contraseña</p>
+    <div id="alerta" class="alerta" data-testid="login-alerta" role="alert"></div>
+
+    <form id="form-login" novalidate>
+      <div class="campo">
+        <label for="email">Correo electrónico</label>
+        <input id="email" name="email" type="email" maxlength="100" autocomplete="email"
+               data-filtro="sinEspacios" placeholder="correo@ejemplo.com" data-testid="login-email">
+        <div class="error" id="error-email" data-testid="login-email-error"></div>
+      </div>
+      <div class="campo">
+        <label for="password">Contraseña</label>
+        <input id="password" name="password" type="password" maxlength="30" autocomplete="current-password"
+               data-testid="login-password">
+        <div class="error" id="error-password" data-testid="login-password-error"></div>
+      </div>
+      <button type="submit" data-testid="login-submit">Ingresar</button>
+    </form>
+
+    <p class="enlace">¿No tienes cuenta? <a href="/registro" data-testid="ir-registro">Regístrate</a></p>
+  </main>
+
+  <script src="/static/validaciones.js"></script>
+  <script>
+    const form = document.getElementById("form-login");
+    const caja = document.getElementById("alerta");
+    aplicarFiltros(form);
+    form.querySelectorAll("input").forEach((i) => i.addEventListener("blur", () => validarCampo(i)));
+
+    // En login la contraseña solo se exige no vacía (no se revela la regla de formato).
+    function validarLogin() {
+      const email = form.email, pass = form.password;
+      const okEmail = validarCampo(email);
+      const okPass = !!pass.value;
+      mostrarError(pass, okPass ? "" : "Este campo es obligatorio.");
+      return okEmail && okPass;
+    }
+    form.password.addEventListener("blur", () => mostrarError(form.password, form.password.value ? "" : "Este campo es obligatorio."));
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      caja.className = "alerta";
+      if (!validarLogin()) return;
+      const btn = form.querySelector("button");
+      btn.disabled = true;
+      try {
+        const r = await fetch("/api/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: form.email.value.trim(), password: form.password.value }),
+        });
+        const data = await r.json();
+        if (data.ok) window.location.href = "/bienvenida";
+        else alerta(caja, data.mensaje, "error-g");
+      } catch {
+        alerta(caja, "No se pudo conectar con el servidor.", "error-g");
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

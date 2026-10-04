@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bienvenido</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <main class="card bienvenida">
+    <div class="emoji">👋</div>
+    <h1 data-testid="bienvenida-titulo">¡Bienvenido!</h1>
+    <p class="sub" id="nombre" data-testid="bienvenida-nombre"></p>
+    <button id="salir" data-testid="logout">Cerrar sesión</button>
+  </main>
+  <script>
+    fetch("/api/me").then((r) => r.json()).then((d) => {
+      if (!d.ok) return (window.location.href = "/login");
+      document.getElementById("nombre").textContent = d.nombre;
+    });
+    document.getElementById("salir").onclick = async () => {
+      await fetch("/api/logout", { method: "POST" });
+      window.location.href = "/login";
+    };
+  </script>
+</body>
+</html>

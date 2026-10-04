@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Registro</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <main class="card">
+    <h1>Crear cuenta</h1>
+    <p class="sub">Completa todos los campos</p>
+    <div id="alerta" class="alerta" data-testid="registro-alerta" role="alert"></div>
+
+    <form id="form-registro" novalidate>
+      <div class="fila">
+        <div class="campo">
+          <label for="nombre">Nombre</label>
+          <input id="nombre" name="nombre" type="text" maxlength="50" data-filtro="letras" data-testid="registro-nombre">
+          <div class="error" id="error-nombre" data-testid="registro-nombre-error"></div>
+        </div>
+        <div class="campo">
+          <label for="apellido">Apellido</label>
+          <input id="apellido" name="apellido" type="text" maxlength="50" data-filtro="letras" data-testid="registro-apellido">
+          <div class="error" id="error-apellido" data-testid="registro-apellido-error"></div>
+        </div>
+      </div>
+      <div class="campo">
+        <label for="documento">Documento de identidad</label>
+        <input id="documento" name="documento" type="text" inputmode="numeric" maxlength="10"
+               data-filtro="numeros" data-testid="registro-documento">
+        <div class="error" id="error-documento" data-testid="registro-documento-error"></div>
+      </div>
+      <div class="campo">
+        <label for="fecha_nacimiento">Fecha de nacimiento</label>
+        <input id="fecha_nacimiento" name="fecha_nacimiento" type="date" data-testid="registro-fecha">
+        <div class="error" id="error-fecha_nacimiento" data-testid="registro-fecha-error"></div>
+      </div>
+      <div class="campo">
+        <label for="email">Correo electrónico</label>
+        <input id="email" name="email" type="email" maxlength="100" data-filtro="sinEspacios"
+               placeholder="correo@ejemplo.com" data-testid="registro-email">
+        <div class="error" id="error-email" data-testid="registro-email-error"></div>
+      </div>
+      <div class="campo">
+        <label for="password">Contraseña</label>
+        <input id="password" name="password" type="password" maxlength="30" autocomplete="new-password"
+               data-testid="registro-password">
+        <div class="error" id="error-password" data-testid="registro-password-error"></div>
+      </div>
+      <div class="campo">
+        <label for="telefono">Número de teléfono</label>
+        <input id="telefono" name="telefono" type="tel" inputmode="numeric" maxlength="10"
+               data-filtro="numeros" placeholder="3001234567" data-testid="registro-telefono">
+        <div class="error" id="error-telefono" data-testid="registro-telefono-error"></div>
+      </div>
+      <button type="submit" data-testid="registro-submit">Registrarme</button>
+    </form>
+
+    <p class="enlace">¿Ya tienes cuenta? <a href="/login" data-testid="ir-login">Inicia sesión</a></p>
+  </main>
+
+  <script src="/static/validaciones.js"></script>
+  <script>
+    const form = document.getElementById("form-registro");
+    const caja = document.getElementById("alerta");
+    form.fecha_nacimiento.max = new Date().toISOString().slice(0, 10);
+    aplicarFiltros(form);
+    form.querySelectorAll("input").forEach((i) => i.addEventListener("blur", () => validarCampo(i)));
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      caja.className = "alerta";
+      if (!validarFormulario(form)) return;
+      const datos = Object.fromEntries(new FormData(form));
+      const btn = form.querySelector("button");
+      btn.disabled = true;
+      try {
+        const r = await fetch("/api/registro", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(datos),
+        });
+        const data = await r.json();
+        if (data.ok) {
+          alerta(caja, data.mensaje + " Redirigiendo al login...", "ok");
+          form.reset();
+          setTimeout(() => (window.location.href = "/login"), 1500);
+        } else {
+          Object.entries(data.errores || {}).forEach(([campo, msg]) => mostrarError(form[campo], msg));
+          alerta(caja, "Revisa los campos marcados.", "error-g");
+        }
+      } catch {
+        alerta(caja, "No se pudo conectar con el servidor.", "error-g");
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
